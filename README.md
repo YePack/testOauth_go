@@ -1,2 +1,2 @@
 # testOauth_go
-Open Authentification library for Go`s language projects
+Open Authentication library for Go`s language projects
