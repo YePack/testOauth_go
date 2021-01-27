@@ -2,9 +2,10 @@ package oauth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mercadolibre/golang-restclient/rest"
-	"github.com/yepack/testOauth_go/oauth/errors"
+	"github.com/yepack/testUtils-api/rest_errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -63,7 +64,7 @@ func GetClientId(request *http.Request) int64 {
 	return callerId
 }
 
-func AuthenticateRequest(request *http.Request) *errors.RestErr {
+func AuthenticateRequest(request *http.Request) rest_errors.RestErr {
 	if request == nil {
 		return nil
 	}
@@ -74,8 +75,10 @@ func AuthenticateRequest(request *http.Request) *errors.RestErr {
 	if accessTokenId == "" {
 		return nil
 	}
+
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
+
 		return err
 	}
 	request.Header.Add(headerXCallerId, fmt.Sprintf("%v", at.UserId))
@@ -92,22 +95,22 @@ func cleanRequest(request *http.Request) {
 	request.Header.Del(headerXClientId)
 }
 
-func getAccessToken(accessTokenId string) (*accessToken, *errors.RestErr) {
+func getAccessToken(accessTokenId string) (*accessToken, rest_errors.RestErr) {
 	response := oauthRestClient.Get(fmt.Sprintf("/oauth/access_token/%s", accessTokenId))
 	if response == nil || response.Response == nil {
-		return nil, errors.NewInternalServerError("invalid restclient response when trying to get AT")
+		return nil, rest_errors.NewInternalServerError("invalid restclient response when trying to get AT", errors.New(""))
 	}
 	if response.StatusCode > 299 {
-		var restErr errors.RestErr
+		var restErr rest_errors.RestErr
 		if err := json.Unmarshal(response.Bytes(), &restErr); err != nil {
-			return nil, errors.NewInternalServerError("invalid error interface when trying to get AT")
+			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get AT", errors.New(""))
 		}
-		return nil, &restErr
+		return nil, restErr
 	}
 
 	var at accessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
-		return nil, errors.NewInternalServerError("error when trying unmarshal AT response")
+		return nil, rest_errors.NewInternalServerError("error when trying unmarshal AT response", errors.New(""))
 	}
 	return &at, nil
 }
